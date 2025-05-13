@@ -1,0 +1,64 @@
+from flask import Flask, request, jsonify
+import random
+
+app = Flask(__name__)
+
+# Simulated user credentials
+users = {
+    "admin": "securepassword123"
+}
+
+# Simulated device state
+device = {
+    "location": {"lat": 0.0, "lon": 0.0},
+    "locked": False,
+    "alarm": False,
+    "wiped": False
+}
+
+# Simulate random location generation (city bounds example)
+def update_location():
+    device['location'] = {
+        "lat": round(random.uniform(12.9000, 12.9500), 6),
+        "lon": round(random.uniform(77.5000, 77.6000), 6)
+    }
+
+# User authentication function
+def authenticate(data):
+    username = data.get("username")
+    password = data.get("password")
+    return users.get(username) == password
+
+@app.route('/location', methods=['POST'])
+def get_location():
+    data = request.get_json()
+    if not authenticate(data):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    update_location()
+    return jsonify({
+        "location": device["location"]
+    })
+
+@app.route('/command', methods=['POST'])
+def send_command():
+    data = request.get_json()
+    if not authenticate(data):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    command = data.get("command")
+    if command == "lock":
+        device["locked"] = True
+        return jsonify({"status": "Device locked"})
+    elif command == "alarm":
+        device["alarm"] = True
+        return jsonify({"status": "Alarm triggered"})
+    elif command == "wipe":
+        device["wiped"] = True
+        return jsonify({"status": "Device wiped"})
+    else:
+        return jsonify({"error": "Unknown command"}), 400
+
+# Run the app (use host='0.0.0.0' for online platforms like Replit)
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
